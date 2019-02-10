@@ -19,8 +19,8 @@ from functools import reduce
 
 class LJSpeech(Corpus):
 
-    def __init__(self, in_dir, out_dir):
-        self.in_dir = in_dir
+    def __init__(self, data_dir, out_dir):
+        self.data_dir = data_dir
         self.out_dir = out_dir
         self.audio = Audio(hparams)
 
@@ -138,13 +138,13 @@ class LJSpeech(Corpus):
 
     def _extract_text_and_path(self, line, index):
         parts = line.strip().split('|')
-        wav_path = os.path.join(self.in_dir, 'wavs', '%s.wav' % parts[0])
+        wav_path = os.path.join(self.data_dir, 'wavs', '%s.wav' % parts[0])
         text = parts[2]
         return TextAndPath(index, wav_path, None, text)
 
     def _extract_all_text_and_path(self):
         index = 1
-        with open(os.path.join(self.in_dir, 'metadata.csv'), mode='r', encoding='utf-8') as f:
+        with open(os.path.join(self.data_dir, 'metadata.csv'), mode='r', encoding='utf-8') as f:
             for line in f:
                 extracted = self._extract_text_and_path(line, index)
                 if extracted is not None:
@@ -173,7 +173,3 @@ class LJSpeech(Corpus):
         filepath = os.path.join(self.out_dir, filename)
         tfrecord.write_preprocessed_source_data2(paths.id, paths.text, sequence, paths.text, sequence, filepath)
         return SourceMetaData(paths.id, filepath, paths.text)
-
-
-def instantiate(in_dir, out_dir):
-    return LJSpeech(in_dir, out_dir)

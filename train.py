@@ -27,8 +27,7 @@ from tacotron.models import SingleSpeakerTacotronV1Model
 from hparams import hparams, hparams_debug_string
 
 
-def train_and_evaluate(hparams, model_dir, train_source_files, train_target_files, eval_source_files,
-                       eval_target_files):
+def train_and_evaluate(hparams, model_dir, source_dir, target_dir):
     interleave_parallelism = get_parallelism(hparams.interleave_cycle_length_cpu_factor,
                                              hparams.interleave_cycle_length_min,
                                              hparams.interleave_cycle_length_max)
@@ -36,18 +35,21 @@ def train_and_evaluate(hparams, model_dir, train_source_files, train_target_file
     tf.logging.info("Interleave parallelism is %d.", interleave_parallelism)
 
     def train_input_fn():
-        source_and_target_files = list(zip(train_source_files, train_target_files))
-        shuffle(source_and_target_files)
-        source = (s for s, _ in source_and_target_files)
-        target = (t for _, t in source_and_target_files)
+        source = (s for s, _ in source_dir)
+        target = (t for _, t in target_dir)
 
+        
+        tf.data.Dataset.list_files(source_dir)
         dataset = DatasetSource.create_from_tfrecord_files(source, target, hparams,
                                                            cycle_length=interleave_parallelism,
                                                            buffer_output_elements=hparams.interleave_buffer_output_elements,
                                                            prefetch_input_elements=hparams.interleave_prefetch_input_elements)
-        batched = dataset.prepare_and_zip().filter_by_max_output_length().shuffle_and_repeat(
-            hparams.suffle_buffer_size).group_by_batch().prefetch(hparams.prefetch_buffer_size)
-        return batched.dataset
+        dataset = dataset.prepare_and_zip()
+        dataset = dataset.filter_by_max_output_length()
+        dataset = dataset.shuffle_and_repeat(hparams.suffle_buffer_size)
+        dataset = dataset.group_by_batch()
+        dataset = dataset.prefetch(hparams.prefetch_buffer_size)
+        return dataset
 
     def eval_input_fn():
         source_and_target_files = list(zip(eval_source_files, eval_target_files))

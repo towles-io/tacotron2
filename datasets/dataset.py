@@ -65,18 +65,21 @@ class DatasetSource:
     def create_from_tfrecord_files(source_files, target_files, hparams, cycle_length=4,
                                    buffer_output_elements=None,
                                    prefetch_input_elements=None):
-        source = tf.data.Dataset.from_generator(lambda: source_files, tf.string, tf.TensorShape([]))
+        
         target = tf.data.Dataset.from_generator(lambda: target_files, tf.string, tf.TensorShape([]))
-        source = source.apply(tf.contrib.data.parallel_interleave(
-            lambda filename: tf.data.TFRecordDataset(filename),
-            cycle_length, sloppy=False,
-            buffer_output_elements=buffer_output_elements,
-            prefetch_input_elements=prefetch_input_elements))
         target = target.apply(tf.contrib.data.parallel_interleave(
             lambda filename: tf.data.TFRecordDataset(filename),
             cycle_length, sloppy=False,
             buffer_output_elements=buffer_output_elements,
             prefetch_input_elements=prefetch_input_elements))
+
+        source = tf.data.Dataset.from_generator(lambda: source_files, tf.string, tf.TensorShape([]))
+        source = source.apply(tf.contrib.data.parallel_interleave(
+            lambda filename: tf.data.TFRecordDataset(filename),
+            cycle_length, sloppy=False,
+            buffer_output_elements=buffer_output_elements,
+            prefetch_input_elements=prefetch_input_elements))
+        
         return DatasetSource(source, target, hparams)
 
     @property

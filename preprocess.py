@@ -17,32 +17,36 @@ options:
 
 """
 
-from docopt import docopt
-import importlib
-from pyspark import SparkContext
+#from docopt import docopt
+from datasets import ljspeech
+import argparse
+import os
 
 if __name__ == "__main__":
-    args = docopt(__doc__)
-    name = args["<name>"]
-    in_dir = args["<in_dir>"]
-    out_dir = args["<out_dir>"]
-    source_only = args["--source-only"]
-    target_only = args["--target-only"]
-    source_and_target = not source_only and not target_only
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--data_dir', default=os.path.expanduser('~/Datasets'))
+    parser.add_argument('--out_dir', default=os.path.expanduser('~/OutputDir/tacotron2/data'))
+    parser.add_argument('--format', default='ljspeech')
+    args = parser.parse_args()
 
-    assert name in ["blizzard2012", "ljspeech"]
-    mod = importlib.import_module("datasets." + name)
-    instance = mod.instantiate(in_dir, out_dir)
+    if not os.path.exists(args.out_dir):
+        os.makedirs(args.out_dir)
 
-    sc = SparkContext()
-    if target_only or source_and_target:
-        target_metadata = instance.process_targets(
-            instance.text_and_path_rdd(sc))
-        target_num, max_target_len = instance.aggregate_target_metadata(target_metadata)
-        print(f"number of target records: {target_num}, max target length: {max_target_len}")
+    assert args.format in ["blizzard2012", "ljspeech"]
 
-    if source_only or source_and_target:
-        source_meta = instance.process_sources(
-            instance.text_and_path_rdd(sc))
-        source_num, max_source_len = instance.aggregate_source_metadata(source_meta)
-        print(f"number of source records: {source_num}, max source length: {max_source_len}")
+    if args.format == "ljspeech":
+       data = ljspeech.LJSpeech(args.data_dir, args.out_dir)
+       data
+
+    # sc = SparkContext()
+    # if target_only or source_and_target:
+    #     target_metadata = instance.process_targets(
+    #         instance.text_and_path_rdd(sc))
+    #     target_num, max_target_len = instance.aggregate_target_metadata(target_metadata)
+    #     print(f"number of target records: {target_num}, max target length: {max_target_len}")
+
+    # if source_only or source_and_target:
+    #     source_meta = instance.process_sources(
+    #         instance.text_and_path_rdd(sc))
+    #     source_num, max_source_len = instance.aggregate_source_metadata(source_meta)
+    #     print(f"number of source records: {source_num}, max source length: {max_source_len}")
