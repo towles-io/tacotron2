@@ -32,21 +32,11 @@ if __name__ == "__main__":
 
     assert args.format in ["blizzard2012", "ljspeech"]
 
-
-    
     #  if args.format == "ljspeech":
     data = ljspeech.LJSpeech(args.data_dir, args.out_dir)
+
     target_metadata = data.process_target()
-    for i in target_metadata:
-            print(i)
+    print(f"number of target records: {len(target_metadata)}")
 
-    
-
-    #target_num, max_target_len = data.aggregate_target_metadata(target_metadata)
-    #print(f"number of target records: {target_num}, max target length: {max_target_len}")
-
-
-    #     source_meta = instance.process_sources(
-    #         instance.text_and_path_rdd(sc))
-    #     source_num, max_source_len = instance.aggregate_source_metadata(source_meta)
-    #     print(f"number of source records: {source_num}, max source length: {max_source_len}")
+    source_metadata = data.process_source()
+    print(f"number of source records: {len(source_metadata)}")

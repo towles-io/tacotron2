@@ -129,7 +129,7 @@ class LJSpeech(Corpus):
         for item in data:
             counter += 1            
          
-        for paths in tqdm(self._extract_all_text_and_path(), total=counter, unit='Examples'):
+        for paths in tqdm(self._extract_all_text_and_path(), total=counter, unit='Target TFRecords'):
             wav = self.audio.load_wav(paths.wav_path)
             spectrogram = self.audio.spectrogram(wav).astype(np.float32)
             n_frames = spectrogram.shape[1]
@@ -141,9 +141,20 @@ class LJSpeech(Corpus):
             result.append(d)
         return result
 
-    def _process_source(self, paths: TextAndPath):
-        sequence = self._text_to_sequence(paths.text)
-        filename = f"ljspeech-source-{paths.id:05d}.tfrecord"
-        filepath = os.path.join(self.out_dir, filename)
-        tfrecord.write_preprocessed_source_data2(paths.id, paths.text, sequence, paths.text, sequence, filepath)
-        return SourceMetaData(paths.id, filepath, paths.text)
+    def process_source(self):
+        result = []
+
+        data = self._extract_all_text_and_path()
+        counter = 0
+        for item in data:
+            counter += 1    
+
+        for paths in tqdm(self._extract_all_text_and_path(), total=counter, unit='Source TFRecords'):
+            sequence = self._text_to_sequence(paths.text)
+            filename = f"ljspeech-source-{paths.id:05d}.tfrecord"
+            filepath = os.path.join(self.out_dir, filename)
+            tfrecord.write_preprocessed_source_data2(paths.id, paths.text, sequence, paths.text, sequence, filepath)
+            d = SourceMetaData(paths.id, filepath, paths.text)
+            result.append(d)
+
+        return result
