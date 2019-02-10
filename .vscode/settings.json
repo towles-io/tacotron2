@@ -1,5 +1,4 @@
 {
-    "python.linting.pylintEnabled": true,
-    "python.pythonPath": "/home/towlesd/.conda/envs/tf/bin/python",
+    "python.linting.pylintEnabled": true,    
     "python.linting.enabled": true
 }

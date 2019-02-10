@@ -16,8 +16,6 @@ options:
     -h, --help               Show help message.
 
 """
-
-#from docopt import docopt
 from datasets import ljspeech
 import argparse
 import os
@@ -25,7 +23,7 @@ import os
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--data_dir', default=os.path.expanduser('~/Datasets/LJSpeech-1.1'))
-    parser.add_argument('--out_dir', default=os.path.expanduser('~/OutputDir/tacotron2/data'))
+    parser.add_argument('--out_dir', default=os.path.expanduser('~/TFRecords/ljspeech'))
     parser.add_argument('--format', default='ljspeech')
     args = parser.parse_args()
 

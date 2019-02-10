@@ -9,6 +9,7 @@
 import numpy as np
 import os
 import random
+from tqdm import tqdm
 from util import tfrecord
 from util.audio import Audio
 from hparams import hparams
@@ -122,7 +123,13 @@ class LJSpeech(Corpus):
 
     def process_target(self):
         result = []
-        for paths in self._extract_all_text_and_path():
+
+        data = self._extract_all_text_and_path()
+        counter = 0
+        for item in data:
+            counter += 1            
+         
+        for paths in tqdm(self._extract_all_text_and_path(), total=counter, unit='Examples'):
             wav = self.audio.load_wav(paths.wav_path)
             spectrogram = self.audio.spectrogram(wav).astype(np.float32)
             n_frames = spectrogram.shape[1]
