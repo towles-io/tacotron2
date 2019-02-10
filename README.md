@@ -13,11 +13,20 @@ This is an implementation of Tacotron and Tacotron2.
 - matplotlib >= 2.2.2
 - hypothesis >= 3.59.1
 
+### Install requirements:
+
+```
+pip install -r requirements.txt
+```
 
 ## Preprocessing
 
 ```bash
-preprocess.py <dataset> </input/dataset/dir> </output/dataset/dir>
+python3 preprocess.py <dataset> </input/dataset/dir> </output/dataset/dir>
+
+#Example
+python3 preprocess.py ljspeech ~/Datasets/LJSpeech-1.1 ~/OutputDir/tacotron2/source
+
 ```
 
 Currently available dataset are,
@@ -31,7 +40,11 @@ Currently available dataset are,
 For training Tacotron itself, run the following command.
 
 ```bash
-train.py --dataset=<dataset> --data-root=</output/dataset/dir> --checkpoint-dir=</path/to/model/dir> --hparams=<parmas>
+
+python3 train.py --dataset=<dataset> --data-root=</output/dataset/dir> --checkpoint-dir=</path/to/model/dir> --hparams=<parmas>
+
+#Example
+
 ```
 
 For training Post-net of Tacotron (Mel to linear spectrogram conversion), run the following command.
