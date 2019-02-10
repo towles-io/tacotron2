@@ -13,7 +13,7 @@ import os
 
 
 class PreprocessedTargetData(namedtuple("PreprocessedTargetData",
-                                        ["id", "text", "source", "source_length", "text2", "source2", "source_length2" "spec", "spec_width", "mel", "mel_width", "target_length"])):
+                                        ["id", "spec", "spec_width", "mel", "mel_width", "target_length", "text", "source", "source_length", "text2", "source2", "source_length2"])):
     pass
 
 

@@ -1,15 +1,15 @@
 import tensorflow as tf
+tf.enable_eager_execution()
 import argparse
 import os
-from random import shuffle
-from multiprocessing import cpu_count
+
 from datasets import ljspeech
 from tacotron.models import SingleSpeakerTacotronV1Model
 from hparams import hparams, hparams_debug_string
 from util.tfrecord import parse_preprocessed_target_data
 
-tf.enable_eager_execution()
 tf.logging.set_verbosity(tf.logging.INFO)
+print('TF Version: ', tf.__version__)
 
 def input_fn(load_test=False, load_eval=False, load_traning=False):
 
@@ -34,7 +34,7 @@ def input_fn(load_test=False, load_eval=False, load_traning=False):
   eval_size = int(1000)
   
   test_dataset = dataset.take(test_size)
-  eval_dataset = dataset.skip(test_size)
+  eval_dataset = dataset.skip(test_size).take(eval_size)
   training_dataset = dataset.skip(eval_size+test_size)
 
   results = dataset
