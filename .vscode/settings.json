@@ -1,5 +1,5 @@
 {
     "python.linting.pylintEnabled": true,
-    "python.pythonPath": "home/slyedoc/anaconda3/envs/tf/bin/python",
+    "python.pythonPath": "/home/towlesd/.conda/envs/tf/bin/python",
     "python.linting.enabled": true
 }

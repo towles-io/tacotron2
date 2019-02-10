@@ -24,7 +24,7 @@ import os
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--data_dir', default=os.path.expanduser('~/Datasets'))
+    parser.add_argument('--data_dir', default=os.path.expanduser('~/Datasets/LJSpeech-1.1'))
     parser.add_argument('--out_dir', default=os.path.expanduser('~/OutputDir/tacotron2/data'))
     parser.add_argument('--format', default='ljspeech')
     args = parser.parse_args()
@@ -34,18 +34,20 @@ if __name__ == "__main__":
 
     assert args.format in ["blizzard2012", "ljspeech"]
 
-    if args.format == "ljspeech":
-       data = ljspeech.LJSpeech(args.data_dir, args.out_dir)
-       data
 
-    # sc = SparkContext()
-    # if target_only or source_and_target:
-    #     target_metadata = instance.process_targets(
-    #         instance.text_and_path_rdd(sc))
-    #     target_num, max_target_len = instance.aggregate_target_metadata(target_metadata)
-    #     print(f"number of target records: {target_num}, max target length: {max_target_len}")
+    
+    #  if args.format == "ljspeech":
+    data = ljspeech.LJSpeech(args.data_dir, args.out_dir)
+    target_metadata = data.process_target()
+    for i in target_metadata:
+            print(i)
 
-    # if source_only or source_and_target:
+    
+
+    #target_num, max_target_len = data.aggregate_target_metadata(target_metadata)
+    #print(f"number of target records: {target_num}, max target length: {max_target_len}")
+
+
     #     source_meta = instance.process_sources(
     #         instance.text_and_path_rdd(sc))
     #     source_num, max_source_len = instance.aggregate_source_metadata(source_meta)

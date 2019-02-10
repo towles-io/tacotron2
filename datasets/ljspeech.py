@@ -5,7 +5,7 @@
 # ==============================================================================
 """ Preprocess for LJSpeech dataset. """
 
-from pyspark import SparkContext, RDD
+
 import numpy as np
 import os
 import random
@@ -44,48 +44,18 @@ class LJSpeech(Corpus):
     def test_record_num(self):
         return 100
 
+    
     @property
-    def training_source_files(self):
-        with open(self.training_list_filepath, mode="r") as f:
+    def source_files(self):
+        with open(self.data_dir, mode="r") as f:
             return [self.record_file_path(record_id, "source") for record_id in f]
 
     @property
-    def training_target_files(self):
-        with open(self.training_list_filepath, mode="r") as f:
+    def target_files(self):
+        with open(self.data_dir, mode="r") as f:
             return [self.record_file_path(record_id, "target") for record_id in f]
 
-    @property
-    def validation_source_files(self):
-        with open(self.validation_list_filepath, mode="r") as f:
-            return [self.record_file_path(record_id, "source") for record_id in f]
-
-    @property
-    def validation_target_files(self):
-        with open(self.validation_list_filepath, mode="r") as f:
-            return [self.record_file_path(record_id, "target") for record_id in f]
-
-    @property
-    def test_source_files(self):
-        with open(self.test_list_filepath, mode="r") as f:
-            return [self.record_file_path(record_id, "source") for record_id in f]
-
-    @property
-    def test_target_files(self):
-        with open(self.test_list_filepath, mode="r") as f:
-            return [self.record_file_path(record_id, "target") for record_id in f]
-
-    @property
-    def training_list_filepath(self):
-        return os.path.join(self.out_dir, "training_list.txt")
-
-    @property
-    def validation_list_filepath(self):
-        return os.path.join(self.out_dir, "validation_list.txt")
-
-    @property
-    def test_list_filepath(self):
-        return os.path.join(self.out_dir, "test_list.txt")
-
+   
     def random_sample(self):
         ids = set(self.record_ids)
         validation_and_test = set(random.sample(ids, self.validation_record_num + self.test_record_num))
@@ -94,53 +64,46 @@ class LJSpeech(Corpus):
         training = ids - validation_and_test
         return training, validation, test
 
-    def text_and_path_rdd(self, sc: SparkContext):
-        return sc.parallelize(
-            self._extract_all_text_and_path())
 
-    def process_targets(self, rdd: RDD):
-        return rdd.mapValues(self._process_target)
+    # def aggregate_source_metadata(self, rdd: RDD):
+    #     def map_fn(splitIndex, iterator):
+    #         csv, max_len, count = reduce(
+    #             lambda acc, kv: (
+    #                 "\n".join([acc[0], source_metadata_to_tsv(kv[1])]), max(acc[1], len(kv[1].text)), acc[2] + 1),
+    #             iterator, ("", 0, 0))
+    #         filename = f"ljspeech-source-metadata-{splitIndex:03d}.tsv"
+    #         filepath = os.path.join(self.out_dir, filename)
+    #         with open(filepath, mode="w", encoding='utf-8') as f:
+    #             f.write(csv)
+    #         yield count, max_len
 
-    def process_sources(self, rdd: RDD):
-        return rdd.mapValues(self._process_source)
+    #     return rdd.sortByKey().mapPartitionsWithIndex(
+    #         map_fn, preservesPartitioning=True).fold(
+    #         (0, 0), lambda acc, xy: (acc[0] + xy[0], max(acc[1], xy[1])))
 
-    def aggregate_source_metadata(self, rdd: RDD):
-        def map_fn(splitIndex, iterator):
-            csv, max_len, count = reduce(
-                lambda acc, kv: (
-                    "\n".join([acc[0], source_metadata_to_tsv(kv[1])]), max(acc[1], len(kv[1].text)), acc[2] + 1),
-                iterator, ("", 0, 0))
-            filename = f"ljspeech-source-metadata-{splitIndex:03d}.tsv"
-            filepath = os.path.join(self.out_dir, filename)
-            with open(filepath, mode="w", encoding='utf-8') as f:
-                f.write(csv)
-            yield count, max_len
+    # def aggregate_target_metadata(self, rdd: RDD):
+    #     def map_fn(splitIndex, iterator):
+    #         csv, max_len, count = reduce(
+    #             lambda acc, kv: (
+    #                 "\n".join([acc[0], target_metadata_to_tsv(kv[1])]), max(acc[1], kv[1].n_frames), acc[2] + 1),
+    #             iterator, ("", 0, 0))
+    #         filename = f"ljspeech-target-metadata-{splitIndex:03d}.tsv"
+    #         filepath = os.path.join(self.out_dir, filename)
+    #         with open(filepath, mode="w") as f:
+    #             f.write(csv)
+    #         yield count, max_len
 
-        return rdd.sortByKey().mapPartitionsWithIndex(
-            map_fn, preservesPartitioning=True).fold(
-            (0, 0), lambda acc, xy: (acc[0] + xy[0], max(acc[1], xy[1])))
-
-    def aggregate_target_metadata(self, rdd: RDD):
-        def map_fn(splitIndex, iterator):
-            csv, max_len, count = reduce(
-                lambda acc, kv: (
-                    "\n".join([acc[0], target_metadata_to_tsv(kv[1])]), max(acc[1], kv[1].n_frames), acc[2] + 1),
-                iterator, ("", 0, 0))
-            filename = f"ljspeech-target-metadata-{splitIndex:03d}.tsv"
-            filepath = os.path.join(self.out_dir, filename)
-            with open(filepath, mode="w") as f:
-                f.write(csv)
-            yield count, max_len
-
-        return rdd.sortByKey().mapPartitionsWithIndex(
-            map_fn, preservesPartitioning=True).fold(
-            (0, 0), lambda acc, xy: (acc[0] + xy[0], max(acc[1], xy[1])))
+    #     return rdd.sortByKey().mapPartitionsWithIndex(
+    #         map_fn, preservesPartitioning=True).fold(
+    #         (0, 0), lambda acc, xy: (acc[0] + xy[0], max(acc[1], xy[1])))
 
     def _extract_text_and_path(self, line, index):
         parts = line.strip().split('|')
         wav_path = os.path.join(self.data_dir, 'wavs', '%s.wav' % parts[0])
         text = parts[2]
-        return TextAndPath(index, wav_path, None, text)
+        model =  TextAndPath(index, wav_path, None, text)
+        return model
+
 
     def _extract_all_text_and_path(self):
         index = 1
@@ -148,7 +111,7 @@ class LJSpeech(Corpus):
             for line in f:
                 extracted = self._extract_text_and_path(line, index)
                 if extracted is not None:
-                    yield (index, extracted)
+                    yield extracted
                     index += 1
 
     def _text_to_sequence(self, text):
@@ -157,15 +120,19 @@ class LJSpeech(Corpus):
         sequence = np.array(sequence, dtype=np.int64)
         return sequence
 
-    def _process_target(self, paths: TextAndPath):
-        wav = self.audio.load_wav(paths.wav_path)
-        spectrogram = self.audio.spectrogram(wav).astype(np.float32)
-        n_frames = spectrogram.shape[1]
-        mel_spectrogram = self.audio.melspectrogram(wav).astype(np.float32)
-        filename = f"ljspeech-target-{paths.id:05d}.tfrecord"
-        filepath = os.path.join(self.out_dir, filename)
-        tfrecord.write_preprocessed_target_data(paths.id, spectrogram.T, mel_spectrogram.T, filepath)
-        return TargetMetaData(paths.id, filepath, n_frames)
+    def process_target(self):
+        result = []
+        for paths in self._extract_all_text_and_path():
+            wav = self.audio.load_wav(paths.wav_path)
+            spectrogram = self.audio.spectrogram(wav).astype(np.float32)
+            n_frames = spectrogram.shape[1]
+            mel_spectrogram = self.audio.melspectrogram(wav).astype(np.float32)
+            filename = f"ljspeech-target-{paths.id:05d}.tfrecord"
+            filepath = os.path.join(self.out_dir, filename)
+            tfrecord.write_preprocessed_target_data(paths.id, spectrogram.T, mel_spectrogram.T, filepath)
+            d =  TargetMetaData(paths.id, filepath, n_frames)
+            result.append(d)
+        return result
 
     def _process_source(self, paths: TextAndPath):
         sequence = self._text_to_sequence(paths.text)
