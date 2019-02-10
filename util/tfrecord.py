@@ -12,13 +12,8 @@ from collections.abc import Iterable
 import os
 
 
-class PreprocessedSourceData(namedtuple("PreprocessedSourceData",
-                                        ["id", "text", "source", "source_length", "text2", "source2", "source_length2"])):
-    pass
-
-
 class PreprocessedTargetData(namedtuple("PreprocessedTargetData",
-                                        ["id", "spec", "spec_width", "mel", "mel_width", "target_length"])):
+                                        ["id", "text", "source", "source_length", "text2", "source2", "source_length2" "spec", "spec_width", "mel", "mel_width", "target_length"])):
     pass
 
 

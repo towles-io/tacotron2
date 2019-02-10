@@ -20,12 +20,15 @@ from datasets import ljspeech
 import argparse
 import os
 
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--data_dir', default=os.path.expanduser('~/Datasets/LJSpeech-1.1'))
     parser.add_argument('--out_dir', default=os.path.expanduser('~/TFRecords/ljspeech'))
     parser.add_argument('--format', default='ljspeech')
     args = parser.parse_args()
+
+    print("Command line args:\n", args)
+
 
     if not os.path.exists(args.out_dir):
         os.makedirs(args.out_dir)
@@ -38,3 +41,6 @@ if __name__ == "__main__":
     print(f"Processing ljspeech examples...")
     target_metadata = data.process_target()
     print(f"number of target records: {len(target_metadata)}")
+
+  if __name__ == '__main__':
+    main()

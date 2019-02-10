@@ -9,6 +9,9 @@
 import tensorflow as tf
 
 hparams = tf.contrib.training.HParams(
+    # Input
+    
+
 
     # Audio
     num_mels=80,
@@ -74,11 +77,6 @@ hparams = tf.contrib.training.HParams(
     suffle_buffer_size=64,
     batch_bucket_width=50,
     batch_num_buckets=50,
-    interleave_cycle_length_cpu_factor=1.0,
-    interleave_cycle_length_min=4,
-    interleave_cycle_length_max=16,
-    interleave_buffer_output_elements=200,
-    interleave_prefetch_input_elements=200,
     prefetch_buffer_size=4,
     record_profile=False,
     profile_steps=50,

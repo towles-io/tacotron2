@@ -8,12 +8,8 @@
 import tensorflow as tf
 from collections import namedtuple
 from abc import abstractmethod
-from util.tfrecord import decode_preprocessed_source_data, decode_preprocessed_target_data, \
-    parse_preprocessed_source_data, parse_preprocessed_target_data, \
-    PreprocessedSourceData, PreprocessedTargetData
-
-
-
+from util.tfrecord import decode_preprocessed_target_data, parse_preprocessed_target_data, \
+    PreprocessedTargetData
 
 class TargetData(
     namedtuple("TargetData",
@@ -53,59 +49,6 @@ class PredictedMel(
 
 class DatasetSource:
 
-    def __init__(self, source, target, hparams):
-        self._source = source
-        self._target = target
-        self._hparams = hparams
-
-    @staticmethod
-    def create_from_tfrecord_files(source_files, target_files, hparams, cycle_length=4,
-                                   buffer_output_elements=None,
-                                   prefetch_input_elements=None):
-        
-        target = tf.data.Dataset.from_generator(lambda: target_files, tf.string, tf.TensorShape([]))
-        target = target.apply(tf.contrib.data.parallel_interleave(
-            lambda filename: tf.data.TFRecordDataset(filename),
-            cycle_length, sloppy=False,
-            buffer_output_elements=buffer_output_elements,
-            prefetch_input_elements=prefetch_input_elements))
-
-        source = tf.data.Dataset.from_generator(lambda: source_files, tf.string, tf.TensorShape([]))
-        source = source.apply(tf.contrib.data.parallel_interleave(
-            lambda filename: tf.data.TFRecordDataset(filename),
-            cycle_length, sloppy=False,
-            buffer_output_elements=buffer_output_elements,
-            prefetch_input_elements=prefetch_input_elements))
-        
-        return DatasetSource(source, target, hparams)
-
-    @property
-    def source(self):
-        return self._source
-
-    @property
-    def target(self):
-        return self._target
-
-    @property
-    def hparams(self):
-        return self._hparams
-
-    def prepare_and_zip(self):
-        def assert_id(source, target):
-            with tf.control_dependencies([tf.assert_equal(source.id, target.id)]):
-                return (source, target)
-
-        zipped = tf.data.Dataset.zip((self._prepare_source(), self._prepare_target())).map(assert_id)
-        return ZippedDataset(zipped, self.hparams)
-
-    def _prepare_source(self):
-        def convert(inputs: PreprocessedSourceData):
-            return SourceData(inputs.id, inputs.text, inputs.source, inputs.source_length,
-                              inputs.text2, inputs.source2, inputs.source_length2)
-
-        return self._decode_source().map(lambda inputs: convert(inputs))
-
     def _prepare_target(self):
         def convert(target: PreprocessedTargetData):
             r = self.hparams.outputs_per_step
@@ -138,7 +81,8 @@ class DatasetSource:
             spec_loss_mask = tf.ones(shape=padded_target_length, dtype=tf.float32)
             binary_loss_mask = tf.ones(shape=padded_target_length // r, dtype=tf.float32)
 
-            return TargetData(target.id, spec, target.spec_width, mel, target.mel_width, padded_target_length, done,
+            return TargetData(target.id, target.text, target.source, target.source_length,
+                              target.text2, target.source2, inputs.source_length2, spec, target.spec_width, mel, target.mel_width, padded_target_length, done,
                               spec_loss_mask, binary_loss_mask)
 
         return self._decode_target().map(lambda inputs: convert(inputs))
@@ -150,139 +94,14 @@ class DatasetSource:
         return self.target.map(lambda d: decode_preprocessed_target_data(parse_preprocessed_target_data(d)))
 
 
-class DatasetBase:
+# class DatasetBase:
 
-    @abstractmethod
-    def apply(self, dataset, hparams):
-        raise NotImplementedError("apply")
+#     def filter_by_max_output_length(self):
+#         def predicate(s, t: PreprocessedTargetData):
+#             max_output_length = self.hparams.max_iters * self.hparams.outputs_per_step
+#             return tf.less_equal(t.target_length, max_output_length)
 
-    @property
-    @abstractmethod
-    def dataset(self):
-        raise NotImplementedError("dataset")
-
-    @property
-    @abstractmethod
-    def hparams(self):
-        raise NotImplementedError("hparams")
-
-    def filter(self, predicate):
-        return self.apply(self.dataset.filter(predicate), self.hparams)
-
-    def filter_by_max_output_length(self):
-        def predicate(s, t: PreprocessedTargetData):
-            max_output_length = self.hparams.max_iters * self.hparams.outputs_per_step
-            return tf.less_equal(t.target_length, max_output_length)
-
-        return self.filter(predicate)
-
-    def shuffle(self, buffer_size):
-        return self.apply(self.dataset.shuffle(buffer_size), self.hparams)
-
-    def repeat(self, count=None):
-        return self.apply(self.dataset.repeat(count), self.hparams)
-
-    def shuffle_and_repeat(self, buffer_size, count=None):
-        dataset = self.dataset.apply(tf.contrib.data.shuffle_and_repeat(buffer_size, count))
-        return self.apply(dataset, self.hparams)
-
-
-class ZippedDataset(DatasetBase):
-
-    def __init__(self, dataset, hparams):
-        self._dataset = dataset
-        self._hparams = hparams
-
-    def apply(self, dataset, hparams):
-        return ZippedDataset(dataset, hparams)
-
-    @property
-    def dataset(self):
-        return self._dataset
-
-    @property
-    def hparams(self):
-        return self._hparams
-
-    def group_by_batch(self, batch_size=None):
-        batch_size = batch_size if batch_size is not None else self.hparams.batch_size
-        approx_min_target_length = self.hparams.approx_min_target_length
-        bucket_width = self.hparams.batch_bucket_width
-        num_buckets = self.hparams.batch_num_buckets
-
-        def key_func(source, target):
-            target_length = tf.minimum(target.target_length - approx_min_target_length, 0)
-            bucket_id = target_length // bucket_width
-            return tf.minimum(tf.to_int64(num_buckets), bucket_id)
-
-        def reduce_func(unused_key, window: tf.data.Dataset):
-            return window.padded_batch(batch_size, padded_shapes=(
-                SourceData(
-                    id=tf.TensorShape([]),
-                    text=tf.TensorShape([]),
-                    source=tf.TensorShape([None]),
-                    source_length=tf.TensorShape([]),
-                    text2=tf.TensorShape([]),
-                    source2=tf.TensorShape([None]),
-                    source_length2=tf.TensorShape([]),
-                ),
-                TargetData(
-                    id=tf.TensorShape([]),
-                    spec=tf.TensorShape([None, self.hparams.num_freq]),
-                    spec_width=tf.TensorShape([]),
-                    mel=tf.TensorShape([None, self.hparams.num_mels]),
-                    mel_width=tf.TensorShape([]),
-                    target_length=tf.TensorShape([]),
-                    done=tf.TensorShape([None]),
-                    spec_loss_mask=tf.TensorShape([None]),
-                    binary_loss_mask=tf.TensorShape([None]),
-                )), padding_values=(
-                SourceData(
-                    id=tf.to_int64(0),
-                    text="",
-                    source=tf.to_int64(0),
-                    source_length=tf.to_int64(0),
-                    text2="",
-                    source2=tf.to_int64(0),
-                    source_length2=tf.to_int64(0),
-                ),
-                TargetData(
-                    id=tf.to_int64(0),
-                    spec=tf.to_float(0),
-                    spec_width=tf.to_int64(0),
-                    mel=tf.to_float(0),
-                    mel_width=tf.to_int64(0),
-                    target_length=tf.to_int64(0),
-                    done=tf.to_float(1),
-                    spec_loss_mask=tf.to_float(0),
-                    binary_loss_mask=tf.to_float(0),
-                )))
-
-        batched = self.dataset.apply(tf.contrib.data.group_by_window(key_func,
-                                                                     reduce_func,
-                                                                     window_size=batch_size * 5))
-        return BatchedDataset(batched, self.hparams)
-
-
-class BatchedDataset(DatasetBase):
-
-    def __init__(self, dataset: tf.data.Dataset, hparams):
-        self._dataset = dataset
-        self._hparams = hparams
-
-    def apply(self, dataset, hparams):
-        return BatchedDataset(dataset, hparams)
-
-    @property
-    def dataset(self):
-        return self._dataset
-
-    @property
-    def hparams(self):
-        return self._hparams
-
-    def prefetch(self, buffer_size):
-        return self.apply(self.dataset.prefetch(buffer_size), self.hparams)
+#         return self.filter(predicate)
 
 
 class PostNetDatasetSource:

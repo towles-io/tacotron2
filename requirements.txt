@@ -1,10 +1,9 @@
 # Note: this doesn't include tensorflow or tensorflow-gpu because the package you need to install
 # depends on your platform. It is assumed you have already installed tensorflow.
 
-pyspark >= 2.3.0
 librosa >= 0.6.1
 scipy >= 1.1.1
-matplotlib >= 2.2.2
+matplotlib >= 3.0.2
 tqdm >= 4.31.0
 ##For test:
 hypothesis >= 3.59.1

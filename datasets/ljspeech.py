@@ -50,7 +50,6 @@ class LJSpeech(Corpus):
 
     def process_target(self):
         result = []
-
         data = self._extract_all_text_and_path()
         counter = 0
         for item in data:
