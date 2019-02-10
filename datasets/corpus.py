@@ -61,15 +61,12 @@ class TextAndPath(namedtuple("TextAndPath", ["id", "wav_path", "labels_path", "t
     pass
 
 
-class SourceMetaData(namedtuple("SourceMetaData", ["id", "filepath", "text"])):
-    pass
-
 
 def source_metadata_to_tsv(meta):
     return "\t".join([str(meta.id), meta.filepath, meta.text])
 
 
-class TargetMetaData(namedtuple("TargetMetaData", ["id", "filepath", "n_frames"])):
+class TargetMetaData(namedtuple("TargetMetaData", ["id", "text", "filepath", "n_frames"])):
     pass
 
 

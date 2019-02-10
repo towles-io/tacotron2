@@ -35,8 +35,6 @@ if __name__ == "__main__":
     #  if args.format == "ljspeech":
     data = ljspeech.LJSpeech(args.data_dir, args.out_dir)
 
+    print(f"Processing ljspeech examples...")
     target_metadata = data.process_target()
     print(f"number of target records: {len(target_metadata)}")
-
-    source_metadata = data.process_source()
-    print(f"number of source records: {len(source_metadata)}")

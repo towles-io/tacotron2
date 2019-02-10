@@ -13,16 +13,13 @@ from util.tfrecord import decode_preprocessed_source_data, decode_preprocessed_t
     PreprocessedSourceData, PreprocessedTargetData
 
 
-class SourceData(namedtuple("SourceData",
-                            ["id", "text", "source", "source_length",
-                             "text2", "source2", "source_length2"])):
-    pass
 
 
 class TargetData(
     namedtuple("TargetData",
-               ["id", "spec", "spec_width", "mel", "mel_width", "target_length", "done",
-                "spec_loss_mask", "binary_loss_mask"])):
+               ["id", 
+               "text", "source", "source_length", "text2", "source2", "source_length2", # was source fields
+                "spec", "spec_width", "mel", "mel_width", "target_length", "done", "spec_loss_mask", "binary_loss_mask", ])):
     pass
 
 
