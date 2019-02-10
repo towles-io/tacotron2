@@ -95,20 +95,3 @@ def decode_preprocessed_target_data(parsed):
         source2=source2,
         source_length2=parsed['source_length'][1],
     )
-
-# def get_source_data(data_dir,batch_size):
-#     ''' Buildind the input pipeline for training and inference using TFRecords files.
-#     @return data only for the training
-#     @return data for the inference
-#     '''
-
-#     filenames = [data_dir + f for f in os.listdir(data_dir)]
-
-#     dataset = tf.data.TFRecordDataset(filenames)
-#     dataset = dataset.map(parse_preprocessed_source_data)
-#     dataset = dataset.shuffle(buffer_size=500)  # shuffle() use to sort the element randomly
-#     dataset = dataset.repeat()
-#     dataset = dataset.batch(batch_size)
-#     dataset = dataset.prefetch(buffer_size=1)
-
-#     return dataset

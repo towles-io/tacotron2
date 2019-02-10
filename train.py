@@ -23,23 +23,26 @@ import importlib
 from random import shuffle
 from multiprocessing import cpu_count
 from datasets.dataset import DatasetSource
+from datasets import ljspeech
 from tacotron.models import SingleSpeakerTacotronV1Model
 from hparams import hparams, hparams_debug_string
+import os
 
 
-def train_and_evaluate(hparams, model_dir, source_dir, target_dir):
+def train_and_evaluate(hparams, checkpoint_dir, 
+                       train_dataset,
+                       eval_dataset,
+                       test_dataset)
+
     interleave_parallelism = get_parallelism(hparams.interleave_cycle_length_cpu_factor,
                                              hparams.interleave_cycle_length_min,
                                              hparams.interleave_cycle_length_max)
 
     tf.logging.info("Interleave parallelism is %d.", interleave_parallelism)
-
     def train_input_fn():
-        source = (s for s, _ in source_dir)
-        target = (t for _, t in target_dir)
 
-        
-        tf.data.Dataset.list_files(source_dir)
+
+        tf.data.Data
         dataset = DatasetSource.create_from_tfrecord_files(source, target, hparams,
                                                            cycle_length=interleave_parallelism,
                                                            buffer_output_elements=hparams.interleave_buffer_output_elements,
@@ -79,25 +82,65 @@ def get_parallelism(factor, min_value, max_value):
 
 
 def main():
-    args = docopt(__doc__)
-    print("Command line args:\n", args)
-    checkpoint_dir = args["--checkpoint-dir"]
-    data_root = args["--data-root"]
-    dataset_name = args["--dataset"]
-    assert dataset_name in ["blizzard2012", "ljspeech"]
-    corpus = importlib.import_module("datasets." + dataset_name)
-    corpus_instance = corpus.instantiate(in_dir="", out_dir=data_root)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--tfrecords_dir', default=os.path.expanduser('~/TFRecords/ljspeech'))
+    parser.add_argument('--training_dir', default=os.path.expanduser('~/Training/tacotron2'))
+    parser.add_argument('--hparams', default='',
+    help='Hyperparameter overrides as a comma-separated list of name=value pairs')
+    args = parser.parse_args()
 
-    hparams.parse(args["--hparams"])
+
+
+    print("Command line args:\n", args)
+
+    args.training_dir = os.path.expanduser(args.training_dir)
+    args.tfrecords_dir = os.path.expanduser(args.tfrecords_dir)
+
+    if not os.path.exists(args.training_dir):
+        os.makedirs(args.training_dir)
+
+    if not os.path.exists(args.tfrecords_dir):
+        os.makedirs(args.tfrecords_dir)
+
+    checkpoint_dir = os.path.join(args.training_dir, 'checkpoint')
+
+    if not os.path.exists(checkpoint_dir):
+        os.makedirs(checkpoint_dir)
+    
+    hparams.parse(args.hparams)
     print(hparams_debug_string())
 
     tf.logging.set_verbosity(tf.logging.INFO)
-    train_and_evaluate(hparams,
-                       checkpoint_dir,
-                       corpus_instance.training_source_files,
-                       corpus_instance.training_target_files,
-                       corpus_instance.validation_source_files,
-                       corpus_instance.validation_target_files)
+    #dataset_list = ljspeech.LJSpeech(data_dir="", out_dir=args.tfrecords_dir)
+
+
+    filenames = tf.data.Dataset.list_files(args.tfrecords_dir)
+    full_dataset = tf.data.TFRecordDataset(filenames)
+
+    #dataset = dataset.map(parse_preprocessed_source_data)
+
+    dataset_size = len(filenames)
+    train_size = int(0.7 * dataset_size)
+    eval_size = int(0.15 * dataset_size)
+    test_size = int(0.15 * dataset_size)
+
+    full_dataset = full_dataset.shuffle()
+    full_dataset = full_dataset.batch(hparams.batch_size)
+    full_dataset = full_dataset.prefetch(buffer_size=1)
+
+
+    train_dataset = full_dataset.take(train_size)
+    test_dataset = full_dataset.skip(train_size)
+    eval_dataset = test_dataset.skip(eval_size)
+    test_dataset = test_dataset.take(test_size) # set to take whats left. 
+
+
+
+    train_and_evaluate(hparams=hparams,
+                       checkpoint_dir=checkpoint_dir,
+                       train_dataset=train_dataset,
+                       eval_dataset=eval_dataset,
+                       test_dataset=test_dataset)
 
 
 if __name__ == '__main__':
