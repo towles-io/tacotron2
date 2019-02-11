@@ -65,6 +65,16 @@
       "request": "launch",
       "program": "${file}",
       "console": "externalTerminal"
-    }
+    },
+    {
+      "name": "Python: Train",
+      "program": "${workspaceFolder}/train.py",
+      "console": "integratedTerminal",
+      "type": "python",
+      "request": "launch",
+      "args": [
+      ],
+      "jinja": true
+  },
   ]
 }
